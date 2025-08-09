@@ -60,7 +60,7 @@ public class PlayerListener implements Listener {
         Block block = event.getClickedBlock();
         if (block == null || block.getType() != Material.LIGHT_WEIGHTED_PRESSURE_PLATE) return;
 
-        Optional<PlateInfo> plateInfoOptional = locationCache.getPlateInfo(block.getLocation());
+        Optional<PlateInfo> plateInfoOptional = locationCache.getPlateInfo(block);
         if (plateInfoOptional.isEmpty()) return;
 
         PlateInfo plateInfo = plateInfoOptional.get();

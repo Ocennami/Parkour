@@ -3,6 +3,7 @@ package com.oceanami.parkour.manager;
 import com.oceanami.parkour.ParkourPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.block.Block;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -21,6 +22,9 @@ public class LocationCache {
     private final Map<String, Map<Integer, Location>> checkpoints = new ConcurrentHashMap<>();
     private final Map<String, Location> customRestartPoints = new ConcurrentHashMap<>();
     private final Map<String, Location> customResetPoints = new ConcurrentHashMap<>();
+
+    // Direct lookup map for plate locations keyed by world UUID and block coordinates
+    private final Map<BlockKey, PlateInfo> plateInfoMap = new ConcurrentHashMap<>();
 
     public LocationCache(ParkourPlugin plugin) {
         this.plugin = plugin;
@@ -46,11 +50,18 @@ public class LocationCache {
                 );
 
                 switch (type) {
-                    case "START" -> startLocations.put(courseName, loc);
-                    case "FINISH" -> finishLocations.put(courseName, loc);
+                    case "START" -> {
+                        startLocations.put(courseName, loc);
+                        addPlateInfo(loc, new PlateInfo(courseName, "START", 0));
+                    }
+                    case "FINISH" -> {
+                        finishLocations.put(courseName, loc);
+                        addPlateInfo(loc, new PlateInfo(courseName, "FINISH", 0));
+                    }
                     case "CHECKPOINT" -> {
                         int order = rs.getInt("checkpoint_order");
                         checkpoints.computeIfAbsent(courseName, k -> new ConcurrentHashMap<>()).put(order, loc);
+                        addPlateInfo(loc, new PlateInfo(courseName, "CHECKPOINT", order));
                     }
                     case "CUSTOM_RESTART" -> customRestartPoints.put(courseName, loc);
                     case "CUSTOM_RESET" -> customResetPoints.put(courseName, loc);
@@ -64,14 +75,17 @@ public class LocationCache {
 
     public void addStartLocation(String courseName, Location loc) {
         startLocations.put(courseName, loc);
+        addPlateInfo(loc, new PlateInfo(courseName, "START", 0));
     }
 
     public void addFinishLocation(String courseName, Location loc) {
         finishLocations.put(courseName, loc);
+        addPlateInfo(loc, new PlateInfo(courseName, "FINISH", 0));
     }
 
     public void addCheckpoint(String courseName, int order, Location loc) {
         checkpoints.computeIfAbsent(courseName, k -> new ConcurrentHashMap<>()).put(order, loc);
+        addPlateInfo(loc, new PlateInfo(courseName, "CHECKPOINT", order));
     }
 
     public void addCustomRestartPoint(String courseName, Location loc) {
@@ -102,44 +116,20 @@ public class LocationCache {
         return Optional.ofNullable(customResetPoints.get(courseName));
     }
 
-    public Optional<PlateInfo> getPlateInfo(Location location) {
-        // Check start locations
-        for (Map.Entry<String, Location> entry : startLocations.entrySet()) {
-            if (areLocationsEqual(entry.getValue(), location)) {
-                return Optional.of(new PlateInfo(entry.getKey(), "START", 0));
-            }
+    public Optional<PlateInfo> getPlateInfo(Block block) {
+        if (block == null || block.getWorld() == null) {
+            return Optional.empty();
         }
-
-        // Check finish locations
-        for (Map.Entry<String, Location> entry : finishLocations.entrySet()) {
-            if (areLocationsEqual(entry.getValue(), location)) {
-                return Optional.of(new PlateInfo(entry.getKey(), "FINISH", 0));
-            }
-        }
-
-        // Check checkpoints
-        for (Map.Entry<String, Map<Integer, Location>> entry : checkpoints.entrySet()) {
-            for (Map.Entry<Integer, Location> checkpointEntry : entry.getValue().entrySet()) {
-                if (areLocationsEqual(checkpointEntry.getValue(), location)) {
-                    return Optional.of(new PlateInfo(entry.getKey(), "CHECKPOINT", checkpointEntry.getKey()));
-                }
-            }
-        }
-
-        return Optional.empty();
+        BlockKey key = new BlockKey(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ());
+        return Optional.ofNullable(plateInfoMap.get(key));
     }
 
-    private boolean areLocationsEqual(Location loc1, Location loc2) {
-        if (loc1 == null || loc2 == null) {
-            return false;
+    private void addPlateInfo(Location loc, PlateInfo plateInfo) {
+        if (loc.getWorld() == null) {
+            return; // Cannot store without world
         }
-        if (loc1.getWorld() == null || loc2.getWorld() == null) {
-            return false; // Cannot compare if worlds are not set
-        }
-        return loc1.getWorld().getUID().equals(loc2.getWorld().getUID()) &&
-                loc1.getBlockX() == loc2.getBlockX() &&
-                loc1.getBlockY() == loc2.getBlockY() &&
-                loc1.getBlockZ() == loc2.getBlockZ();
+        BlockKey key = new BlockKey(loc.getWorld().getUID(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+        plateInfoMap.put(key, plateInfo);
     }
 
 
@@ -149,5 +139,6 @@ public class LocationCache {
         checkpoints.clear();
         customRestartPoints.clear();
         customResetPoints.clear();
+        plateInfoMap.clear();
     }
 }
