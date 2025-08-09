@@ -7,6 +7,7 @@ import com.oceanami.parkour.manager.LocationCache;
 import com.oceanami.parkour.manager.ParkourManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -17,7 +18,6 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -123,18 +123,23 @@ public class ParkourCommand implements CommandExecutor, TabCompleter {
             return;
         }
         String courseName = args[1];
-        try {
-            if (courseCache.courseExists(courseName)) {
-                player.sendMessage(Component.text("A course with that name already exists.").color(NamedTextColor.RED));
-                return;
-            }
-            courseDAO.createCourse(courseName);
-            player.sendMessage(Component.text("Successfully created parkour course: " + courseName).color(NamedTextColor.GREEN));
-            player.sendMessage(Component.text("Now set the start and finish points, then use /parkour save " + courseName).color(NamedTextColor.YELLOW));
-        } catch (SQLException e) {
-            player.sendMessage(Component.text("An error occurred while creating the course.").color(NamedTextColor.RED));
-            plugin.getLogger().log(Level.SEVERE, "SQL Exception on course creation", e);
+        if (courseCache.courseExists(courseName)) {
+            player.sendMessage(Component.text("A course with that name already exists.").color(NamedTextColor.RED));
+            return;
         }
+
+        courseDAO.createCourse(courseName)
+                .thenRun(() -> Bukkit.getScheduler().runTask(plugin, () -> {
+                    player.sendMessage(Component.text("Successfully created parkour course: " + courseName).color(NamedTextColor.GREEN));
+                    player.sendMessage(Component.text("Now set the start and finish points, then use /parkour save " + courseName).color(NamedTextColor.YELLOW));
+                }))
+                .exceptionally(ex -> {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        player.sendMessage(Component.text("An error occurred while creating the course.").color(NamedTextColor.RED));
+                        plugin.getLogger().log(Level.SEVERE, "SQL Exception on course creation", ex);
+                    });
+                    return null;
+                });
     }
 
     private void handleSetLocation(Player player, String[] args, String type) {
@@ -158,41 +163,66 @@ public class ParkourCommand implements CommandExecutor, TabCompleter {
         // Hoặc nếu muốn player đứng trên pressure plate:
         // Location location = targetBlock.getLocation().add(0, 1, 0); // Chỉ add Y
 
-        try {
-            var courseIdOptional = courseDAO.getCourseId(courseName);
-            if (courseIdOptional.isEmpty()) {
-                player.sendMessage(Component.text("Course not found: " + courseName).color(NamedTextColor.RED));
-                return;
-            }
-            int courseId = courseIdOptional.get();
+        var courseOpt = courseCache.getCourse(courseName);
+        if (courseOpt.isEmpty()) {
+            player.sendMessage(Component.text("Course not found: " + courseName).color(NamedTextColor.RED));
+            return;
+        }
+        int courseId = courseOpt.get().getId();
 
-            switch (type) {
-                case "START" -> {
-                    courseDAO.setStartLocation(courseId, courseName, location);
-                    player.sendMessage(Component.text("Start location set for " + courseName).color(NamedTextColor.GREEN));
-                }
-                case "FINISH" -> {
-                    courseDAO.setFinishLocation(courseId, courseName, location);
-                    player.sendMessage(Component.text("Finish location set for " + courseName).color(NamedTextColor.GREEN));
-                }
-                case "CHECKPOINT" -> {
-                    int checkpointOrder = courseDAO.getCheckpointCount(courseId) + 1;
-                    courseDAO.addCheckpoint(courseId, courseName, checkpointOrder, location);
-                    player.sendMessage(Component.text("Added checkpoint #" + checkpointOrder + " for " + courseName).color(NamedTextColor.GREEN));
-                }
-                case "CUSTOM_RESTART" -> {
-                    courseDAO.setCustomRestartPoint(courseId, courseName, location);
-                    player.sendMessage(Component.text("Custom restart point set for " + courseName).color(NamedTextColor.GREEN));
-                }
-                case "CUSTOM_RESET" -> {
-                    courseDAO.setCustomResetPoint(courseId, courseName, location);
-                    player.sendMessage(Component.text("Custom reset point set for " + courseName).color(NamedTextColor.GREEN));
-                }
-            }
-
-        } catch (SQLException e) {
-            player.sendMessage(Component.text("An error occurred while setting the location.").color(NamedTextColor.RED));
-            plugin.getLogger().log(Level.SEVERE, "SQL Exception on setting location", e);
+        switch (type) {
+            case "START" -> courseDAO.setStartLocation(courseId, courseName, location)
+                    .thenRun(() -> Bukkit.getScheduler().runTask(plugin, () ->
+                            player.sendMessage(Component.text("Start location set for " + courseName).color(NamedTextColor.GREEN))))
+                    .exceptionally(ex -> {
+                        Bukkit.getScheduler().runTask(plugin, () -> {
+                            player.sendMessage(Component.text("An error occurred while setting the location.").color(NamedTextColor.RED));
+                            plugin.getLogger().log(Level.SEVERE, "SQL Exception on setting location", ex);
+                        });
+                        return null;
+                    });
+            case "FINISH" -> courseDAO.setFinishLocation(courseId, courseName, location)
+                    .thenRun(() -> Bukkit.getScheduler().runTask(plugin, () ->
+                            player.sendMessage(Component.text("Finish location set for " + courseName).color(NamedTextColor.GREEN))))
+                    .exceptionally(ex -> {
+                        Bukkit.getScheduler().runTask(plugin, () -> {
+                            player.sendMessage(Component.text("An error occurred while setting the location.").color(NamedTextColor.RED));
+                            plugin.getLogger().log(Level.SEVERE, "SQL Exception on setting location", ex);
+                        });
+                        return null;
+                    });
+            case "CHECKPOINT" -> courseDAO.getCheckpointCount(courseId)
+                    .thenCompose(count -> courseDAO.addCheckpoint(courseId, courseName, count + 1, location)
+                            .thenApply(v -> count + 1))
+                    .thenAccept(order -> Bukkit.getScheduler().runTask(plugin, () ->
+                            player.sendMessage(Component.text("Added checkpoint #" + order + " for " + courseName).color(NamedTextColor.GREEN))))
+                    .exceptionally(ex -> {
+                        Bukkit.getScheduler().runTask(plugin, () -> {
+                            player.sendMessage(Component.text("An error occurred while setting the location.").color(NamedTextColor.RED));
+                            plugin.getLogger().log(Level.SEVERE, "SQL Exception on setting location", ex);
+                        });
+                        return null;
+                    });
+            case "CUSTOM_RESTART" -> courseDAO.setCustomRestartPoint(courseId, courseName, location)
+                    .thenRun(() -> Bukkit.getScheduler().runTask(plugin, () ->
+                            player.sendMessage(Component.text("Custom restart point set for " + courseName).color(NamedTextColor.GREEN))))
+                    .exceptionally(ex -> {
+                        Bukkit.getScheduler().runTask(plugin, () -> {
+                            player.sendMessage(Component.text("An error occurred while setting the location.").color(NamedTextColor.RED));
+                            plugin.getLogger().log(Level.SEVERE, "SQL Exception on setting location", ex);
+                        });
+                        return null;
+                    });
+            case "CUSTOM_RESET" -> courseDAO.setCustomResetPoint(courseId, courseName, location)
+                    .thenRun(() -> Bukkit.getScheduler().runTask(plugin, () ->
+                            player.sendMessage(Component.text("Custom reset point set for " + courseName).color(NamedTextColor.GREEN))))
+                    .exceptionally(ex -> {
+                        Bukkit.getScheduler().runTask(plugin, () -> {
+                            player.sendMessage(Component.text("An error occurred while setting the location.").color(NamedTextColor.RED));
+                            plugin.getLogger().log(Level.SEVERE, "SQL Exception on setting location", ex);
+                        });
+                        return null;
+                    });
         }
     }
 
@@ -224,13 +254,16 @@ public class ParkourCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        try {
-            courseDAO.setCourseReady(courseName);
-            player.sendMessage(Component.text("Course '" + courseName + "' has been saved and is now open to players!").color(NamedTextColor.GREEN));
-        } catch (SQLException e) {
-            player.sendMessage(Component.text("An error occurred while saving the course.").color(NamedTextColor.RED));
-            plugin.getLogger().log(Level.SEVERE, "SQL Exception on saving course", e);
-        }
+        courseDAO.setCourseReady(courseName)
+                .thenRun(() -> Bukkit.getScheduler().runTask(plugin, () ->
+                        player.sendMessage(Component.text("Course '" + courseName + "' has been saved and is now open to players!").color(NamedTextColor.GREEN))))
+                .exceptionally(ex -> {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        player.sendMessage(Component.text("An error occurred while saving the course.").color(NamedTextColor.RED));
+                        plugin.getLogger().log(Level.SEVERE, "SQL Exception on saving course", ex);
+                    });
+                    return null;
+                });
     }
 
     private void handleReload(Player player) {

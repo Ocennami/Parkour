@@ -36,7 +36,7 @@ public final class ParkourPlugin extends JavaPlugin {
         this.uiManager = new UIManager(this);
         this.locationCache = new LocationCache(this);
         this.courseCache = new CourseCache(this.databaseManager, getLogger());
-        this.courseDAO = new CourseDAO(this.databaseManager, courseCache, locationCache);
+        this.courseDAO = new CourseDAO(this, this.databaseManager, courseCache, locationCache);
         this.parkourManager = new ParkourManager(this, this.uiManager, courseCache, locationCache);
 
         // 3. Initialize database and load caches
@@ -76,7 +76,7 @@ public final class ParkourPlugin extends JavaPlugin {
         this.uiManager = new UIManager(this);
         this.locationCache = new LocationCache(this);
         this.courseCache = new CourseCache(this.databaseManager, getLogger());
-        this.courseDAO = new CourseDAO(this.databaseManager, this.courseCache, this.locationCache);
+        this.courseDAO = new CourseDAO(this, this.databaseManager, this.courseCache, this.locationCache);
         this.parkourManager = new ParkourManager(this, this.uiManager, this.courseCache, this.locationCache);
 
         // Reload caches

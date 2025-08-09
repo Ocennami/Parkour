@@ -16,6 +16,11 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Manages active parkour sessions. This manager is not thread-safe and should only be
+ * accessed from the Bukkit main thread. Any asynchronous callbacks must schedule their
+ * interactions back onto the main thread before invoking its methods.
+ */
 public class ParkourManager {
 
     private final ParkourPlugin plugin;
@@ -34,7 +39,7 @@ public class ParkourManager {
         this.locationCache = locationCache;
         this.playerSessions = new HashMap<>();
         this.effectsManager = new EffectsManager(plugin);
-        this.playerTimeDAO = new PlayerTimeDAO(plugin);
+        this.playerTimeDAO = new PlayerTimeDAO(plugin, courseCache);
         this.teleportOnStart = plugin.getConfig().getBoolean("teleport-on-start", true);
     }
 
