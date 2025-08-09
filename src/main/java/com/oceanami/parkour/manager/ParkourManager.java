@@ -91,11 +91,15 @@ public class ParkourManager {
     }
 
     public void endSession(Player player, boolean completed) {
+        endSession(player, completed, 0L);
+    }
+
+    public void endSession(Player player, boolean completed, long pausedMillis) {
         ParkourSession session = getSession(player);
         if (session == null) return;
 
         if (completed) {
-            long timeTaken = System.currentTimeMillis() - session.startTime();
+            long timeTaken = System.currentTimeMillis() - session.startTime() - pausedMillis;
             String formattedTime = formatTime(timeTaken);
 
             player.sendMessage(Component.text("You finished the course in ", NamedTextColor.GOLD)

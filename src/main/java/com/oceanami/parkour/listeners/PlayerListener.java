@@ -106,7 +106,7 @@ public class PlayerListener implements Listener {
                 if (inCorrectCourse) {
                     long timePaused = totalPausedTime.getOrDefault(player.getUniqueId(), 0L);
                     long timeTaken = (System.currentTimeMillis() - session.startTime() - timePaused) / 1000;
-                    parkourManager.endSession(player, true);
+                    parkourManager.endSession(player, true, timePaused);
                     stopScoreboard(player);
 
                     Component mainTitle = Component.text("Course Completed!", NamedTextColor.GREEN);
