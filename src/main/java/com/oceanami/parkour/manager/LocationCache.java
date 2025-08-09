@@ -14,6 +14,11 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
+/**
+ * Stores parkour-related locations. Internal maps are thread-safe and may be
+ * updated from asynchronous tasks. Returned {@link Location} objects must only
+ * be used on the main thread when interacting with the Bukkit API.
+ */
 public class LocationCache {
 
     private final ParkourPlugin plugin;

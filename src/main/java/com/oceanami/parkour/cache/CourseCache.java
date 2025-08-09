@@ -13,6 +13,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Thread-safe cache of courses. Backed by a {@link ConcurrentHashMap} so it can be
+ * accessed safely from asynchronous tasks.
+ */
 public class CourseCache {
 
     private final Map<String, Course> courseCache = new ConcurrentHashMap<>();
