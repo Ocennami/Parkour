@@ -27,6 +27,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.HashSet;
+import java.util.Set;
 
 public class PlayerListener implements Listener {
 
@@ -198,14 +200,25 @@ public class PlayerListener implements Listener {
                     return;
                 }
 
-                long timePaused = totalPausedTime.get(playerUUID);
-                long timeElapsed = (System.currentTimeMillis() - session.startTime() - timePaused) / 1000;
-                Score score = objective.getScore(player.getName());
-                score.setScore((int) timeElapsed);
+                Set<String> activeEntries = new HashSet<>();
+                for (ParkourManager.ParkourSession activeSession : parkourManager.getActiveSessions()) {
+                    Player p = activeSession.player();
+                    UUID uuid = p.getUniqueId();
+                    long paused = totalPausedTime.getOrDefault(uuid, 0L);
+                    long elapsed = (System.currentTimeMillis() - activeSession.startTime() - paused) / 1000;
+                    objective.getScore(p.getName()).setScore((int) elapsed);
+                    activeEntries.add(p.getName());
+                }
+
+                for (String entry : board.getEntries()) {
+                    if (!activeEntries.contains(entry)) {
+                        board.resetScores(entry);
+                    }
+                }
 
             }
         };
-        playerTasks.put(player.getUniqueId(), runnable);
+        playerTasks.put(playerUUID, runnable);
         runnable.runTaskTimer(plugin, 0, 20);
     }
 
