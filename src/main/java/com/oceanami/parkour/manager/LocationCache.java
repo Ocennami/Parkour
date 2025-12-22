@@ -94,6 +94,10 @@ public class LocationCache {
         return Optional.ofNullable(checkpoints.get(courseName)).map(cps -> cps.get(order));
     }
 
+    public Optional<java.util.Map<Integer, Location>> getCheckpoints(String courseName) {
+        return Optional.ofNullable(checkpoints.get(courseName));
+    }
+
     public Optional<Location> getCustomRestartPoint(String courseName) {
         return Optional.ofNullable(customRestartPoints.get(courseName));
     }
@@ -149,5 +153,13 @@ public class LocationCache {
         checkpoints.clear();
         customRestartPoints.clear();
         customResetPoints.clear();
+    }
+
+    public void removeLocationsForCourse(String courseName) {
+        startLocations.remove(courseName);
+        finishLocations.remove(courseName);
+        checkpoints.remove(courseName);
+        customRestartPoints.remove(courseName);
+        customResetPoints.remove(courseName);
     }
 }

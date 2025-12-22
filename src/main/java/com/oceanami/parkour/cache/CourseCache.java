@@ -59,4 +59,8 @@ public class CourseCache {
             .map(course -> course.getName())
             .collect(java.util.stream.Collectors.toSet());
     }
+
+    public void removeCourse(String name) {
+        courseCache.remove(name.toLowerCase());
+    }
 }

@@ -88,9 +88,10 @@ public class CourseDAO {
         try (Connection conn = databaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, courseId);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt("count");
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("count");
+                }
             }
         }
         return 0;
@@ -105,6 +106,22 @@ public class CourseDAO {
             pstmt.executeUpdate();
             courseCache.getCourse(courseName).ifPresent(course -> course.setReady(true));
         }
+    }
+
+    public boolean deleteCourse(String courseName) throws SQLException {
+        String sql = "DELETE FROM courses WHERE name = ?";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, courseName);
+            int affectedRows = pstmt.executeUpdate();
+            if (affectedRows > 0) {
+                // Remove from caches
+                courseCache.removeCourse(courseName);
+                locationCache.removeLocationsForCourse(courseName);
+                return true;
+            }
+        }
+        return false;
     }
 
     private void saveLocation(int courseId, String type, int order, Location loc) throws SQLException {

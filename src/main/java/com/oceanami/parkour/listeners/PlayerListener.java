@@ -78,6 +78,12 @@ public class PlayerListener implements Listener {
                     return;
                 }
 
+                // Check permission to play
+                if (!player.hasPermission("parkour.play")) {
+                    player.sendMessage(Component.text("You don't have permission to play parkour.").color(NamedTextColor.RED));
+                    return;
+                }
+
                 if (session != null) {
                     // Always end the current session, whether it's the same course or a different one.
                     // This handles the "restart" case.

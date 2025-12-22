@@ -84,4 +84,50 @@ public class PlayerTimeDAO {
             return false;
         }
     }
+
+    /**
+     * Get top times for a course
+     * @param courseId The course ID
+     * @param limit Maximum number of results
+     * @return List of LeaderboardEntry records
+     */
+    public java.util.List<LeaderboardEntry> getTopTimes(int courseId, int limit) {
+        java.util.List<LeaderboardEntry> entries = new java.util.ArrayList<>();
+        String sql = "SELECT player_name, time_millis FROM parkour_times WHERE course_id = ? ORDER BY time_millis ASC LIMIT ?";
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, courseId);
+            pstmt.setInt(2, limit);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                int rank = 1;
+                while (rs.next()) {
+                    entries.add(new LeaderboardEntry(
+                        rank++,
+                        rs.getString("player_name"),
+                        rs.getLong("time_millis")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return entries;
+    }
+
+    /**
+     * Get a specific player's best time for a course
+     * @param uuid Player UUID
+     * @param courseId Course ID
+     * @return Optional containing the best time in milliseconds
+     */
+    public Optional<Long> getPlayerBestTime(String uuid, int courseId) {
+        try {
+            return getPlayerTime(uuid, courseId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return Optional.empty();
+        }
+    }
+
+    public record LeaderboardEntry(int rank, String playerName, long timeMillis) {}
 }

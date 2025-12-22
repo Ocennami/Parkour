@@ -29,7 +29,7 @@ start-message:
 # Effects settings
 checkpoint-effect:
   enabled: true
-  particle: "VILLAGER_HAPPY"
+  particle: "HAPPY_VILLAGER"
   sound: "ENTITY_PLAYER_LEVELUP"
 
 finish-effect:
@@ -39,5 +39,8 @@ finish-effect:
   title:
     enabled: true
     animation: true # This will be a simple fade-in/fade-out
-    line1: "&a&lVICTORY!"
-    line2: "&fTime: &e{time}"
+    line1: "<green><bold>VICTORY!</bold></green>"
+    line2: "<white>Time: <yellow>{time}</yellow></white>"
+    fade-in: 10
+    stay: 70
+    fade-out: 20

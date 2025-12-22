@@ -16,6 +16,57 @@ commands:
     usage: "/restart"
 
 permissions:
+  # Wildcard permission - grants all parkour permissions
+  parkour.*:
+    description: Grants all Parkour permissions (admin + player).
+    default: op
+    children:
+      parkour.play: true
+      parkour.restart: true
+      parkour.reset: true
+      parkour.top: true
+      parkour.info: true
+      parkour.admin: true
+
+  # Player permissions
+  parkour.play:
+    description: Allows playing parkour courses.
+    default: true
+  parkour.restart:
+    description: Allows restarting the current parkour course.
+    default: true
+  parkour.reset:
+    description: Allows resetting personal best times.
+    default: true
+  parkour.top:
+    description: Allows viewing course leaderboards.
+    default: true
+  parkour.info:
+    description: Allows viewing course information.
+    default: true
+
+  # Admin permissions
   parkour.admin:
-    description: Grants access to all admin commands for the Parkour plugin.
+    description: Grants access to all admin commands.
+    default: op
+    children:
+      parkour.admin.create: true
+      parkour.admin.delete: true
+      parkour.admin.setlocation: true
+      parkour.admin.save: true
+      parkour.admin.reload: true
+  parkour.admin.create:
+    description: Allows creating new parkour courses.
+    default: op
+  parkour.admin.delete:
+    description: Allows deleting parkour courses.
+    default: op
+  parkour.admin.setlocation:
+    description: Allows setting course locations (start, finish, checkpoints).
+    default: op
+  parkour.admin.save:
+    description: Allows saving courses.
+    default: op
+  parkour.admin.reload:
+    description: Allows reloading plugin configuration.
     default: op
