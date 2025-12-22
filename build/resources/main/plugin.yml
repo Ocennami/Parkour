@@ -1,0 +1,21 @@
+name: Parkour
+version: ${project.version}
+main: com.oceanami.parkour.ParkourPlugin
+api-version: 1.19
+author: Oceanami
+description: A feature-rich Parkour plugin.
+
+commands:
+  parkour:
+    description: Main command for the Parkour plugin.
+    aliases: [pk]
+    usage: "/parkour <subcommand>"
+  restart:
+    description: Restarts the current parkour course.
+    aliases: [reset]
+    usage: "/restart"
+
+permissions:
+  parkour.admin:
+    description: Grants access to all admin commands for the Parkour plugin.
+    default: op

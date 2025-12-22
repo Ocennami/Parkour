@@ -1,0 +1,43 @@
+# Parkour Plugin Configuration by Oceanami
+
+# Database settings
+# storage-type: "sqlite" or "mysql"
+storage-type: "sqlite"
+
+mysql:
+  host: "localhost"
+  port: 3306
+  database: "parkour"
+  username: "root"
+  password: ""
+
+# Gameplay settings
+
+# Set to true to teleport the player to the parkour start, false to allow them to start from their current location.
+teleport-on-start: false
+# Set to true to force the player's view to a specific direction on parkour start, false to keep their current view angle.
+force-view-on-start: false
+
+scoreboard:
+  title: "&e&lPARKOUR"
+
+start-message:
+  enabled: true
+  text: "&eTime started!"
+  duration: 3 # in seconds
+
+# Effects settings
+checkpoint-effect:
+  enabled: true
+  particle: "VILLAGER_HAPPY"
+  sound: "ENTITY_PLAYER_LEVELUP"
+
+finish-effect:
+  enabled: true
+  particle: "TOTEM_OF_UNDYING"
+  sound: "UI_TOAST_CHALLENGE_COMPLETE"
+  title:
+    enabled: true
+    animation: true # This will be a simple fade-in/fade-out
+    line1: "&a&lVICTORY!"
+    line2: "&fTime: &e{time}"

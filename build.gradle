@@ -1,0 +1,52 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+group = 'com.oceanami'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = "papermc-repo"
+        url = "https://repo.papermc.io/repository/maven-public/"
+    }
+    maven {
+        name = "sonatype"
+        url = "https://oss.sonatype.org/content/groups/public/"
+    }
+}
+
+dependencies {
+    compileOnly "io.papermc.paper:paper-api:1.19.4-R0.1-SNAPSHOT"
+    // Dependency for MySQL connection
+    implementation 'mysql:mysql-connector-java:8.0.33'
+    // Dependency for SQLite connection
+    implementation 'org.xerial:sqlite-jdbc:3.41.2.2'
+}
+
+def targetJavaVersion = 17
+java {
+    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
+    sourceCompatibility = javaVersion
+    targetCompatibility = javaVersion
+    if (JavaVersion.current() < javaVersion) {
+        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+shadowJar {
+    archiveBaseName.set('Parkour')
+    archiveClassifier.set('')
+    relocate 'org.sqlite', 'com.oceanami.parkour.lib.sqlite'
+    relocate 'com.mysql', 'com.oceanami.parkour.lib.mysql'
+}
+
+tasks.build {
+    dependsOn(shadowJar)
+}
