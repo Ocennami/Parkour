@@ -90,12 +90,12 @@ public class ParkourManager {
         uiManager.sendStartMessage(player);
     }
 
-    public void endSession(Player player, boolean completed) {
+    public void endSession(Player player, boolean completed, long pausedTime) {
         ParkourSession session = getSession(player);
         if (session == null) return;
 
         if (completed) {
-            long timeTaken = System.currentTimeMillis() - session.startTime();
+            long timeTaken = System.currentTimeMillis() - session.startTime() - pausedTime;
             String formattedTime = formatTime(timeTaken);
 
             player.sendMessage(Component.text("You finished the course in ", NamedTextColor.GOLD)
@@ -119,15 +119,43 @@ public class ParkourManager {
     }
 
     public void restartPlayer(Player player) {
-        // Chỉ reset progress, không teleport
-        resetPlayerProgress(player);
-        player.sendMessage(Component.text("Course restarted. Please go to the start point.").color(NamedTextColor.GREEN));
+        ParkourSession session = getSession(player);
+        if (session == null) return;
+
+        String courseName = session.courseName();
+        Optional<Location> startLocationOpt = locationCache.getStartLocation(courseName);
+        
+        if (startLocationOpt.isEmpty()) {
+            player.sendMessage(Component.text("Start location not found for this course.").color(NamedTextColor.RED));
+            return;
+        }
+
+        // End current session
+        playerSessions.remove(player.getUniqueId());
+
+        // Teleport to start
+        Location startLocation = startLocationOpt.get();
+        Location teleportLocation = new Location(
+            startLocation.getWorld(),
+            startLocation.getX() + 0.5,
+            startLocation.getY() + 1,
+            startLocation.getZ() + 0.5,
+            player.getLocation().getYaw(),
+            player.getLocation().getPitch()
+        );
+        player.teleport(teleportLocation);
+
+        // Create new session with fresh timer
+        ParkourSession newSession = new ParkourSession(player, courseName, System.currentTimeMillis(), 0, teleportLocation);
+        playerSessions.put(player.getUniqueId(), newSession);
+
+        player.sendMessage(Component.text("Course restarted! Timer has been reset.").color(NamedTextColor.GREEN));
+        uiManager.sendStartMessage(player);
     }
 
     public void resetPlayerToStart(Player player) {
-        // Chỉ reset progress, không teleport  
-        resetPlayerProgress(player);
-        player.sendMessage(Component.text("Progress reset. Please return to the start point.").color(NamedTextColor.GREEN));
+        // Deprecated - kept for compatibility
+        restartPlayer(player);
     }
 
     private void resetPlayerProgress(Player player) {

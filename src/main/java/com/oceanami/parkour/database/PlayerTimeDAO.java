@@ -58,11 +58,30 @@ public class PlayerTimeDAO {
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, uuid);
             pstmt.setInt(2, courseId);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return Optional.of(rs.getLong("time_millis"));
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(rs.getLong("time_millis"));
+                }
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * Deletes all parkour times for a specific player
+     * @param uuid The player's UUID
+     * @return true if any records were deleted
+     */
+    public boolean deletePlayerTimes(String uuid) {
+        String sql = "DELETE FROM parkour_times WHERE player_uuid = ?";
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, uuid);
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }

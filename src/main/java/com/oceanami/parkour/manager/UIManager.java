@@ -30,15 +30,4 @@ public class UIManager {
             }.runTaskLater(plugin, duration * 20L); // duration in seconds
         }
     }
-
-    public void updateTime(Player player, long millis) {
-        // This method no longer controls the action bar timer.
-    }
-
-    private String formatTime(long millis) {
-        long minutes = (millis / 1000) / 60;
-        long seconds = (millis / 1000) % 60;
-        long hundredths = (millis / 10) % 100;
-        return String.format("%02d:%02d.%02d", minutes, seconds, hundredths);
-    }
 }

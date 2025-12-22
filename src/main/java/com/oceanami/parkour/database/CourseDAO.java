@@ -49,9 +49,10 @@ public class CourseDAO {
         try (Connection conn = databaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, courseName);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return Optional.of(rs.getInt("id"));
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(rs.getInt("id"));
+                }
             }
         }
         return Optional.empty();
@@ -107,7 +108,13 @@ public class CourseDAO {
     }
 
     private void saveLocation(int courseId, String type, int order, Location loc) throws SQLException {
-        String sql = "INSERT OR REPLACE INTO locations (course_id, type, checkpoint_order, world, x, y, z, yaw, pitch) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        // Use REPLACE for MySQL, INSERT OR REPLACE for SQLite
+        String sql;
+        if (databaseManager.isMySql()) {
+            sql = "REPLACE INTO locations (course_id, type, checkpoint_order, world, x, y, z, yaw, pitch) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        } else {
+            sql = "INSERT OR REPLACE INTO locations (course_id, type, checkpoint_order, world, x, y, z, yaw, pitch) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        }
         try (Connection conn = databaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, courseId);

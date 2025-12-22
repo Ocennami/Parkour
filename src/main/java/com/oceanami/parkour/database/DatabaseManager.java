@@ -15,9 +15,14 @@ public class DatabaseManager {
 
     private final ParkourPlugin plugin;
     private Connection connection;
+    private boolean isMySql = false;
 
     public DatabaseManager(ParkourPlugin plugin) {
         this.plugin = plugin;
+    }
+
+    public boolean isMySql() {
+        return isMySql;
     }
 
     public Connection getConnection() throws SQLException {
@@ -41,6 +46,7 @@ public class DatabaseManager {
                 }
                 // Added autoReconnect=true for more stability
                 connection = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&autoReconnect=true", username, password);
+                isMySql = true;
                 plugin.getLogger().info("Successfully connected to MySQL database.");
             }
         } else { // Default to SQLite
@@ -75,9 +81,11 @@ public class DatabaseManager {
     public void initializeDatabase() {
         try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {
             
+            String autoIncrement = isMySql ? "AUTO_INCREMENT" : "AUTOINCREMENT";
+            
             // Table for parkour courses
             String coursesTable = "CREATE TABLE IF NOT EXISTS courses (" +
-                                  "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                                  "id INTEGER PRIMARY KEY " + autoIncrement + "," +
                                   "name VARCHAR(255) NOT NULL UNIQUE," +
                                   "ready BOOLEAN NOT NULL DEFAULT 0" +
                                   ");";
@@ -85,9 +93,9 @@ public class DatabaseManager {
 
             // Table for locations (start, finish, checkpoints)
             String locationsTable = "CREATE TABLE IF NOT EXISTS locations (" +
-                                      "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                                      "id INTEGER PRIMARY KEY " + autoIncrement + "," +
                                       "course_id INTEGER NOT NULL," +
-                                      "type VARCHAR(16) NOT NULL, " + // START, FINISH, CHECKPOINT, CUSTOM_RESTART, CUSTOM_RESET
+                                      "type VARCHAR(16) NOT NULL, " +
                                       "checkpoint_order INTEGER DEFAULT 0," +
                                       "world VARCHAR(255) NOT NULL," +
                                       "x DOUBLE NOT NULL, y DOUBLE NOT NULL, z DOUBLE NOT NULL," +
@@ -98,7 +106,7 @@ public class DatabaseManager {
 
             // Table for player best times
             String playerTimesTable = "CREATE TABLE IF NOT EXISTS parkour_times (" +
-                                      "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                                      "id INTEGER PRIMARY KEY " + autoIncrement + "," +
                                       "player_uuid VARCHAR(36) NOT NULL," +
                                       "player_name VARCHAR(16) NOT NULL," +
                                       "course_id INTEGER NOT NULL," +

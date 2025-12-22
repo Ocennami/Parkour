@@ -81,7 +81,7 @@ public class PlayerListener implements Listener {
                 if (session != null) {
                     // Always end the current session, whether it's the same course or a different one.
                     // This handles the "restart" case.
-                    parkourManager.endSession(player, false);
+                    parkourManager.endSession(player, false, 0L);
                     stopScoreboard(player);
                 }
 
@@ -106,7 +106,7 @@ public class PlayerListener implements Listener {
                 if (inCorrectCourse) {
                     long timePaused = totalPausedTime.getOrDefault(player.getUniqueId(), 0L);
                     long timeTaken = (System.currentTimeMillis() - session.startTime() - timePaused) / 1000;
-                    parkourManager.endSession(player, true);
+                    parkourManager.endSession(player, true, timePaused);
                     stopScoreboard(player);
 
                     Component mainTitle = Component.text("Course Completed!", NamedTextColor.GREEN);
@@ -228,7 +228,7 @@ public class PlayerListener implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         if (parkourManager.isPlaying(player)) {
-            parkourManager.endSession(player, false);
+            parkourManager.endSession(player, false, 0L);
             stopScoreboard(player);
         }
     }

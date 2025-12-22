@@ -9,7 +9,6 @@ import com.oceanami.parkour.listeners.PlayerListener;
 import com.oceanami.parkour.manager.LocationCache;
 import com.oceanami.parkour.manager.ParkourManager;
 import com.oceanami.parkour.manager.UIManager;
-import com.oceanami.parkour.scheduler.ParkourTask;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -49,9 +48,6 @@ public final class ParkourPlugin extends JavaPlugin {
 
         // 5. Register listeners with correct dependencies
         getServer().getPluginManager().registerEvents(new PlayerListener(this.parkourManager, locationCache, this), this);
-
-        // 6. Start the scheduler task
-        new ParkourTask(this).runTaskTimerAsynchronously(this, 0L, 1L); // Run every tick (50ms)
 
         getLogger().info("Parkour plugin has been enabled successfully!");
     }

@@ -53,4 +53,10 @@ public class CourseCache {
     public boolean courseExists(String name) {
         return courseCache.containsKey(name.toLowerCase());
     }
+
+    public java.util.Set<String> getAllCourseNames() {
+        return courseCache.values().stream()
+            .map(course -> course.getName())
+            .collect(java.util.stream.Collectors.toSet());
+    }
 }

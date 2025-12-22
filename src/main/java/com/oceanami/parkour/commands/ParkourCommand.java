@@ -49,8 +49,8 @@ public class ParkourCommand implements CommandExecutor, TabCompleter {
 
         if (args.length == 0) {
             player.sendMessage(Component.text("--- Parkour Commands ---").color(NamedTextColor.GOLD));
-            player.sendMessage(Component.text("/parkour restart").color(NamedTextColor.YELLOW).append(Component.text(" - Reset progress (không teleport).", NamedTextColor.GRAY)));
-            player.sendMessage(Component.text("/parkour reset").color(NamedTextColor.YELLOW).append(Component.text(" - Reset về đầu (không teleport).", NamedTextColor.GRAY)));
+            player.sendMessage(Component.text("/parkour restart").color(NamedTextColor.YELLOW).append(Component.text(" - Teleport về start và restart timer.", NamedTextColor.GRAY)));
+            player.sendMessage(Component.text("/parkour reset").color(NamedTextColor.YELLOW).append(Component.text(" - Xóa tất cả best times của bạn.", NamedTextColor.GRAY)));
 
             if (player.hasPermission("parkour.admin")) {
                 player.sendMessage(Component.text("--- Lệnh Admin ---").color(NamedTextColor.RED));
@@ -104,17 +104,19 @@ public class ParkourCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(Component.text("You are not currently in a parkour course.").color(NamedTextColor.RED));
             return;
         }
-        // parkourManager.restartPlayer(player); // Comment out dòng này
-        player.sendMessage(Component.text("Please return to the start point manually.").color(NamedTextColor.YELLOW));
+        parkourManager.restartPlayer(player);
     }
 
     private void handleReset(Player player) {
-        if (!parkourManager.isPlaying(player)) {
-            player.sendMessage(Component.text("You are not currently in a parkour course.").color(NamedTextColor.RED));
-            return;
+        // Reset all player's best times from database
+        boolean deleted = plugin.getCourseDAO() != null && 
+            new com.oceanami.parkour.database.PlayerTimeDAO(plugin).deletePlayerTimes(player.getUniqueId().toString());
+        
+        if (deleted) {
+            player.sendMessage(Component.text("All your parkour records have been deleted!").color(NamedTextColor.GREEN));
+        } else {
+            player.sendMessage(Component.text("You have no parkour records to delete.").color(NamedTextColor.YELLOW));
         }
-        // parkourManager.resetPlayerToStart(player); // Comment out dòng này
-        player.sendMessage(Component.text("Please return to the start point manually.").color(NamedTextColor.YELLOW));
     }
 
     private void handleCreate(Player player, String[] args) {
@@ -253,7 +255,17 @@ public class ParkourCommand implements CommandExecutor, TabCompleter {
                         .toList();
             }
         }
-        // You can add tab completion for course names here in the future
+        
+        // Tab completion for course names (for admin commands that need a course name)
+        if (args.length == 2 && sender.hasPermission("parkour.admin")) {
+            List<String> courseCommands = Arrays.asList("setstart", "setfinish", "addcheckpoint", "save", "setrestartpoint", "setresetpoint");
+            if (courseCommands.contains(args[0].toLowerCase())) {
+                return courseCache.getAllCourseNames().stream()
+                    .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
+                    .toList();
+            }
+        }
+        
         return Collections.emptyList();
     }
 }
